@@ -20,6 +20,15 @@ namespace EntityFramework.Batch
     /// </summary>
     public class SqlServerBatchRunner : IBatchRunner
     {
+
+        /// <summary>
+        /// Removes everthing from the beginning to the first from
+        /// </summary>
+        static string GetTruncatedSelectStatement(string selectStatement)
+        {
+            return selectStatement.Substring(selectStatement.IndexOf("FROM", StringComparison.InvariantCulture) - 1);
+        }
+
         /// <summary>
         /// Create and run a batch delete statement.
         /// </summary>
@@ -103,21 +112,9 @@ namespace EntityFramework.Batch
                 sqlBuilder.Append(entityMap.TableName);
                 sqlBuilder.AppendLine();
 
-                sqlBuilder.AppendFormat("FROM {0} AS j0 INNER JOIN (", entityMap.TableName);
-                sqlBuilder.AppendLine();
-                sqlBuilder.AppendLine(innerSelect);
-                sqlBuilder.Append(") AS j1 ON (");
 
-                bool wroteKey = false;
-                foreach (var keyMap in entityMap.KeyMaps)
-                {
-                    if (wroteKey)
-                        sqlBuilder.Append(" AND ");
+                sqlBuilder.AppendLine(GetTruncatedSelectStatement(innerSelect));
 
-                    sqlBuilder.AppendFormat("j0.[{0}] = j1.[{0}]", keyMap.ColumnName);
-                    wroteKey = true;
-                }
-                sqlBuilder.Append(")");
 
                 deleteCommand.CommandText = sqlBuilder.ToString();
 
@@ -346,23 +343,7 @@ namespace EntityFramework.Batch
                     wroteSet = true;
                 }
 
-                sqlBuilder.AppendLine(" ");
-                sqlBuilder.AppendFormat("FROM {0} AS j0 INNER JOIN (", entityMap.TableName);
-                sqlBuilder.AppendLine();
-                sqlBuilder.AppendLine(innerSelect);
-                sqlBuilder.Append(") AS j1 ON (");
-
-                bool wroteKey = false;
-                foreach (var keyMap in entityMap.KeyMaps)
-                {
-                    if (wroteKey)
-                        sqlBuilder.Append(" AND ");
-
-                    sqlBuilder.AppendFormat("j0.[{0}] = j1.[{0}]", keyMap.ColumnName);
-                    wroteKey = true;
-                }
-                sqlBuilder.Append(")");
-
+                sqlBuilder.AppendLine(GetTruncatedSelectStatement(innerSelect));
                 updateCommand.CommandText = sqlBuilder.ToString();
 
 #if NET45
